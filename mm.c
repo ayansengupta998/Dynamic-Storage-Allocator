@@ -356,7 +356,9 @@ int mm_init () {
 /* Allocate a block of size size and return a pointer to it. */
 void* mm_malloc (size_t size) {
   size_t reqSize;
+  BlockInfo * ptrMemSbrkReturn = NULL;
   BlockInfo * ptrFreeBlock = NULL;
+  BlockInfo * ptrSplitBlock = NULL;
   size_t blockSize;
   size_t precedingBlockUseTag;
 
