@@ -356,7 +356,9 @@ int mm_init () {
 /* Allocate a block of size size and return a pointer to it. */
 void* mm_malloc (size_t size) {
   size_t reqSize;
+  BlockInfo * ptrMemSbrkReturn = NULL;
   BlockInfo * ptrFreeBlock = NULL;
+  BlockInfo * ptrSplitBlock = NULL;
   size_t blockSize;
   size_t precedingBlockUseTag;
 
@@ -381,7 +383,37 @@ void* mm_malloc (size_t size) {
   // Implement mm_malloc.  You can change or remove any of the above
   // code.  It is included as a suggestion of where to start.
   // You will want to replace this return statement...
-  return NULL; 
+//  return NULL;
+    ptrFreeBlock = searchFreeList(reqSize);
+    if(ptrFreeBlock == NULL) {
+       ptrMemSbrkReturn = mem_sbrk(32);
+       ptrMemSbrkReturn = (BlockInfo*)UNSCALED_POINTER_SUB(ptrMemSbrkReturn, WORD_SIZE);
+       ptrMemSbrkReturn->sizeAndTags = 32 | TAG_PRECEDING_USED;
+        ((BlockInfo*)UNSCALED_POINTER_ADD(ptrMemSbrkReturn, 32-WORD_SIZE))->sizeAndTags = ptrMemSbrkReturn->sizeAndTags;
+        *(size_t*)UNSCALED_POINTER_ADD(ptrMemSbrkReturn,32) = 1;
+        insertFreeBlock(ptrMemSbrkReturn);
+        requestMoreSpace(reqSize);
+        ptrFreeBlock = searchFreeList(reqSize);
+    }
+    precedingBlockUseTag = ptrFreeBlock->sizeAndTags & TAG_PRECEDING_USED;
+    blockSize = SIZE(ptrFreeBlock->sizeAndTags);
+    ptrFreeBlock->sizeAndTags = blockSize | precedingBlockUseTag;
+    if (((int)blockSize - (int)reqSize) >= 32) {
+        ptrFreeBlock->sizeAndTags = reqSize | precedingBlockUseTag;
+        ((BlockInfo*)UNSCALED_POINTER_ADD(ptrFreeBlock, reqSize-WORD_SIZE))->sizeAndTags = reqSize | precedingBlockUseTag;
+        ptrSplitBlock = (BlockInfo*)UNSCALED_POINTER_ADD(ptrFreeBlock, reqSize);
+        ptrSplitBlock->sizeAndTags = (blockSize-reqSize) | TAG_PRECEDING_USED;
+        ((BlockInfo*)UNSCALED_POINTER_ADD(ptrSplitBlock, blockSize-reqSize-WORD_SIZE))->sizeAndTags = (blockSize-reqSize) | TAG_PRECEDING_USED;
+
+        insertFreeBlock(ptrSplitBlock);
+    }
+
+
+    removeFreeBlock(ptrFreeBlock);
+    ptrFreeBlock->sizeAndTags = ptrFreeBlock->sizeAndTags | TAG_USED;
+
+    return UNSCALED_POINTER_ADD(ptrFreeBlock,WORD_SIZE);
+
 }
 
 /* Free the block referenced by ptr. */
