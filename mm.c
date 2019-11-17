@@ -390,6 +390,17 @@ void mm_free (void *ptr) {
   BlockInfo * blockInfo;
   BlockInfo * followingBlock;
 
+  size_t sizeOfBlock;
+  size_t prevBlock;
+
+  blockInfo = (BlockInfo*)UNSCALED_POINTER_SUB(ptr, WORD_SIZE);
+  sizeOfBlock = SIZE(blockInfo -> sizeAndTags);
+
+  prevBlock = blockInfo->sizeAndTags & TAG_PRECEDING_USED;
+  blockInfo->sizeAndTags = sizeOfBlock | prevBlock;
+  ((BlockInfo*)UNSCALED_POINTER_ADD(blockInfo, sizeOfBlock-WORD_SIZE))->sizeAndTags = blockInfo->sizeAndTags;
+  insertFreeBlock(blockInfo);
+  coalesceFreeBlock(blockInfo);
   // Implement mm_free.  You can change or remove the declaraions
   // above.  They are included as minor hints.
 
