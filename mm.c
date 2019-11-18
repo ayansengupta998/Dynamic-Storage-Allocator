@@ -429,7 +429,7 @@ void mm_free (void *ptr) {
     //payload is stored
     payloadSize=SIZE(blockInfo->sizeAndTags);
     //next block is found
-    followingBlock = (BlockInfo*)POINTER_ADD(blockInfo, payloadSize);
+    followingBlock = (BlockInfo*)UNSCALED_POINTER_ADD(blockInfo, payloadSize);
     //next block's tag preceding used is set to false
     followingBlock->sizeAndTags=followingBlock->sizeAndTags & (~TAG_PRECEDING_USED);
 }
