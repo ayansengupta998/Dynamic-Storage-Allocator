@@ -411,25 +411,28 @@ void* mm_malloc (size_t size) {
 
 /* Free the block referenced by ptr. */
 void mm_free (void *ptr) {
-      size_t payloadSize;
-      BlockInfo * blockInfo;
-      BlockInfo * followingBlock;
-      blockInfo = (BlockInfo*)UNSCALED_POINTER_SUB(ptr, WORD_SIZE);
-      //if block isn't free
-      if(((blockInfo->sizeAndTags) & TAG_USED)==0){
+    //storing the size of the block info's size and tags
+    size_t payloadSize;
+    BlockInfo * blockInfo;
+    BlockInfo * followingBlock;
+    //blockInfo is stored in this variable
+    blockInfo = (BlockInfo*)UNSCALED_POINTER_SUB(ptr, WORD_SIZE);
+    //if block isn't free
+    if(((blockInfo->sizeAndTags) & TAG_USED)==0){
         return;
-      }
-      //if unused,  mark as free and coalesce
-      blockInfo->sizeAndTags=blockInfo->sizeAndTags & (~TAG_USED);
-      insertFreeBlock(blockInfo);
-      coalesceFreeBlock(blockInfo);
-      payloadSize=SIZE(blockInfo->sizeAndTags);
-      //next block's tag preceding used is set to false
-      followingBlock = (BlockInfo*)UNSCALED_POINTER_ADD(blockInfo, payloadSize);
-      followingBlock->sizeAndTags=followingBlock->sizeAndTags & (~TAG_PRECEDING_USED);
-
+    }
+    //works only if unused,  mark as free and coalesce
+    blockInfo -> sizeAndTags = blockInfo -> sizeAndTags & (~TAG_USED);
+    //free blocks are inserted and coalesced
+    insertFreeBlock(blockInfo);
+    coalesceFreeBlock(blockInfo);
+    //payload is stored
+    payloadSize=SIZE(blockInfo->sizeAndTags);
+    //next block is found
+    followingBlock = (BlockInfo*)POINTER_ADD(blockInfo, payloadSize);
+    //next block's tag preceding used is set to false
+    followingBlock->sizeAndTags=followingBlock->sizeAndTags & (~TAG_PRECEDING_USED);
 }
-
 
 // Implement a heap consistency checker as needed.
 int mm_check() {
