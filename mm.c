@@ -431,7 +431,7 @@ void mm_free (void *ptr) {
   followingBlock->sizeAndTags = followingBlock->sizeAndTags & (~TAG_PRECEDING_USED);
   //blockinfo size and tag updated
   blockInfo->sizeAndTags = blockInfo->sizeAndTags & (~TAG_USED);
-  *((size_t*)UNSCALED_POINTER_ADD(blockInfo, payloadSize) = sizeOfBlock |(blockInfo->sizeAndTags & TAG_PRECEDING_USED);
+  *((size_t*)UNSCALED_POINTER_ADD(blockInfo, payloadSize)) = sizeOfBlock |(blockInfo->sizeAndTags & TAG_PRECEDING_USED);
   //tag preceding used of next block footer set to 0
   *((size_t*)UNSCALED_POINTER_ADD(followingBlock, SIZE(followingBlock->sizeAndTags) - WORD_SIZE)) =SIZE(followingBlock->sizeAndTags) | (followingBlock->sizeAndTags & TAG_USED);
 
