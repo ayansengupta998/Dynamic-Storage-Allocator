@@ -416,23 +416,22 @@ void* mm_malloc (size_t size) {
 
 /* Free the block referenced by ptr. */
 void mm_free (void *ptr) {
-  size_t payloadSize;
-  BlockInfo * blockInfo;
-  BlockInfo * followingBlock;
-
-  size_t sizeOfBlock;
-  size_t prevBlock;
-
-  blockInfo = (BlockInfo*)UNSCALED_POINTER_SUB(ptr, WORD_SIZE);
-  sizeOfBlock = SIZE(blockInfo -> sizeAndTags);
-
-  prevBlock = blockInfo->sizeAndTags & TAG_PRECEDING_USED;
-  blockInfo->sizeAndTags = sizeOfBlock | prevBlock;
-  ((BlockInfo*)UNSCALED_POINTER_ADD(blockInfo, sizeOfBlock-WORD_SIZE))->sizeAndTags = blockInfo->sizeAndTags;
-  insertFreeBlock(blockInfo);
-  coalesceFreeBlock(blockInfo);
-  // Implement mm_free.  You can change or remove the declaraions
-  // above.  They are included as minor hints.
+      size_t payloadSize;
+      BlockInfo * blockInfo;
+      BlockInfo * followingBlock;
+      blockInfo = (BlockInfo*)UNSCALED_POINTER_SUB(ptr, WORD_SIZE);
+      //if block isn't free
+      if(((blockInfo->sizeAndTags) & TAG_USED)==0){
+        return;
+      }
+      //if unused,  mark as free and coalesce
+      blockInfo->sizeAndTags=blockInfo->sizeAndTags & (~TAG_USED);
+      insertFreeBlock(blockInfo);
+      coalesceFreeBlock(blockInfo);
+      payloadSize=SIZE(blockInfo->sizeAndTags);
+      //next block's tag preceding used is set to false
+      followingBlock = (BlockInfo*)POINTER_ADD(blockInfo, payloadSize);
+      followingBlock->sizeAndTags=followingBlock->sizeAndTags & (~TAG_PRECEDING_USED);
 
 }
 
