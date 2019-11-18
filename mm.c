@@ -430,7 +430,7 @@ void mm_free (void *ptr) {
       coalesceFreeBlock(blockInfo);
       payloadSize=SIZE(blockInfo->sizeAndTags);
       //next block's tag preceding used is set to false
-      followingBlock = (BlockInfo*)POINTER_ADD(blockInfo, payloadSize);
+      followingBlock = (BlockInfo*)UNSCALED_POINTER_ADD(blockInfo, payloadSize);
       followingBlock->sizeAndTags=followingBlock->sizeAndTags & (~TAG_PRECEDING_USED);
 
 }
