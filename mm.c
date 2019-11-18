@@ -1,4 +1,6 @@
-/*-------------------------------------------------------------------                             
+/*-------------------------------------------------------------------
+ * Name - Ayan Sengupta and Achuthan Panikath
+ * Extra credit not attempted
  * Lab 5 Starter code:                                                                            
  *        single doubly-linked free block list with LIFO policy                                   
  *        with support for coalescing adjacent free blocks  
