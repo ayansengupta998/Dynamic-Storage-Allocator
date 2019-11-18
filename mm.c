@@ -422,8 +422,6 @@ void mm_free (void *ptr) {
   BlockInfo * blockInfo;
   BlockInfo * followingBlock;
 
-  size_t prevBlock;
-
   blockInfo = (BlockInfo*)UNSCALED_POINTER_SUB(ptr, WORD_SIZE);
   size_t sizeOfBlock = SIZE(blockInfo -> sizeAndTags);
   //payload size stored for ease
@@ -433,7 +431,7 @@ void mm_free (void *ptr) {
   followingBlock->sizeAndTags = followingBlock->sizeAndTags & (~TAG_PRECEDING_USED);
   //blockinfo size and tag updated
   blockInfo->sizeAndTags = blockInfo->sizeAndTags & (~TAG_USED);
-  *((size_t*)UNSCALED_POINTER_ADD(blockInfo, payloadSize) = blockSize |(blockInfo->sizeAndTags & TAG_PRECEDING_USED);
+  *((size_t*)UNSCALED_POINTER_ADD(blockInfo, payloadSize) = sizeOfBlock |(blockInfo->sizeAndTags & TAG_PRECEDING_USED);
   //tag preceding used of next block footer set to 0
   *((size_t*)UNSCALED_POINTER_ADD(followingBlock, SIZE(followingBlock->sizeAndTags) - WORD_SIZE)) =SIZE(followingBlock->sizeAndTags) | (followingBlock->sizeAndTags & TAG_USED);
 
