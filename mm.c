@@ -245,10 +245,7 @@ static void requestMoreSpace(size_t reqSize) {
   size_t prevLastWordMask;
 
   void* mem_sbrk_result = mem_sbrk(totalSize);
-  if ((size_t)mem_sbrk_result == -1) {
-    printf("ERROR: mem_sbrk failed in requestMoreSpace\n");
-    exit(0);
-  }
+
   newBlock = (BlockInfo*)UNSCALED_POINTER_SUB(mem_sbrk_result, WORD_SIZE);
 
   /* initialize header, inherit TAG_PRECEDING_USED status from the
@@ -260,12 +257,7 @@ static void requestMoreSpace(size_t reqSize) {
   ((BlockInfo*)UNSCALED_POINTER_ADD(newBlock, totalSize - WORD_SIZE))->sizeAndTags = 
     totalSize | prevLastWordMask;
 
-  /* initialize "new" useless last word
-     the previous block is free at this moment
-     but this word is useless, so its use bit is set
-     This trick lets us do the "normal" check even at the end of
-     the heap and avoid a special check to see if the following
-     block is the end of the heap... */
+
   *((size_t*)UNSCALED_POINTER_ADD(newBlock, totalSize)) = TAG_USED;
 
   // Add the new block to the free list and immediately coalesce newly
@@ -357,7 +349,6 @@ int mm_init () {
 void* mm_malloc (size_t size) {
     size_t reqSize;
     BlockInfo * ptrFreeBlock = NULL;
-    BlockInfo * ptrAllBlock = NULL;
     size_t blockSize;
     size_t precedingBlockUseTag;
 
@@ -365,51 +356,55 @@ void* mm_malloc (size_t size) {
     if (size == 0) {
         return NULL;
     }
-
     // Add one word for the initial size header.
-    // Note that we don't need to boundary tag when the block is used!
     size += WORD_SIZE;
     if (size <= MIN_BLOCK_SIZE) {
-        // Make sure we allocate enough space for a blockInfo in case we
-        // free this block (when we free this block, we'll need to use the
-        // next pointer, the prev pointer, and the boundary tag).
+        // Minimum size... one for next, one for prev, one for
+        // boundary tag, one for the size header.
         reqSize = MIN_BLOCK_SIZE;
     } else {
         // Round up for correct alignment
         reqSize = ALIGNMENT * ((size + ALIGNMENT - 1) / ALIGNMENT);
     }
+    // Implement mm_malloc.  You can change or remove any of the above
+    // code.  It is included as a suggestion of where to start.
+    // You will want to replace this return statement...
 
-    //Case that heap needs more space - call requestMoreSpace
-    if ((ptrAllBlock = searchFreeList(reqSize)) == NULL) {
+
+
+    reqSize=reqSize+ALIGNMENT;
+    ptrFreeBlock=searchFreeList(reqSize);
+    if(ptrFreeBlock== NULL){
         requestMoreSpace(reqSize);
-        ptrAllBlock = searchFreeList(reqSize);
-
-    }
-
-
-    removeFreeBlock(ptrAllBlock);
-    blockSize = SIZE(ptrAllBlock->sizeAndTags);
-    precedingBlockUseTag = ptrAllBlock->sizeAndTags & TAG_PRECEDING_USED;
-    if ((blockSize - reqSize) >= MIN_BLOCK_SIZE) {
-        size_t freeBlockSize = blockSize - reqSize;
-        ptrFreeBlock = (BlockInfo*)UNSCALED_POINTER_ADD(ptrAllBlock, reqSize);
-        ptrFreeBlock->sizeAndTags = (freeBlockSize | TAG_PRECEDING_USED);
-        *((size_t*)UNSCALED_POINTER_ADD(ptrFreeBlock, (freeBlockSize - WORD_SIZE))) =
-                (freeBlockSize | TAG_PRECEDING_USED);
-        insertFreeBlock(ptrFreeBlock);
-        coalesceFreeBlock(ptrFreeBlock);
-        ptrAllBlock->sizeAndTags = reqSize | precedingBlockUseTag | TAG_USED;
+        ptrFreeBlock = searchFreeList(reqSize);
+        precedingBlockUseTag=TAG_PRECEDING_USED;
     } else {
-        ptrAllBlock->sizeAndTags = blockSize | precedingBlockUseTag | TAG_USED;
-        BlockInfo * nextBlock = UNSCALED_POINTER_ADD(ptrAllBlock, blockSize);
-        size_t nextBlockSize = SIZE(nextBlock->sizeAndTags);
-        size_t nextBlockUsed = nextBlock->sizeAndTags & TAG_USED;
-        *((size_t*)UNSCALED_POINTER_ADD(nextBlock, SIZE(nextBlock->sizeAndTags) - WORD_SIZE))= 			(nextBlockSize | nextBlockUsed | TAG_PRECEDING_USED);
-        nextBlock->sizeAndTags = nextBlockSize | nextBlockUsed | TAG_PRECEDING_USED;
-
+        precedingBlockUseTag=ptrFreeBlock->sizeAndTags & TAG_PRECEDING_USED;
     }
 
-    return UNSCALED_POINTER_ADD(ptrAllBlock,WORD_SIZE);
+    blockSize = SIZE(ptrFreeBlock->sizeAndTags);
+    removeFreeBlock(ptrFreeBlock);
+
+    if((blockSize - reqSize) > MIN_BLOCK_SIZE){
+        BlockInfo * newBlock = (BlockInfo*)UNSCALED_POINTER_ADD(ptrFreeBlock, reqSize);
+        newBlock->sizeAndTags = ((blockSize-reqSize) | TAG_PRECEDING_USED) &
+                                (~TAG_USED);
+
+
+        ptrFreeBlock->sizeAndTags = reqSize | precedingBlockUseTag;
+        *((size_t*)UNSCALED_POINTER_ADD(ptrFreeBlock, (reqSize-WORD_SIZE)))=reqSize;
+        *((size_t*)UNSCALED_POINTER_ADD(ptrFreeBlock, (blockSize-WORD_SIZE)))=blockSize-reqSize;
+
+        insertFreeBlock(newBlock);
+    } else {
+        *((size_t*)UNSCALED_POINTER_ADD(ptrFreeBlock, (blockSize-WORD_SIZE)))=blockSize;
+        BlockInfo* nextBlock = (BlockInfo*)UNSCALED_POINTER_ADD(ptrFreeBlock, blockSize);
+        nextBlock->sizeAndTags = nextBlock->sizeAndTags | TAG_PRECEDING_USED;
+    }
+    ptrFreeBlock->sizeAndTags =  ptrFreeBlock->sizeAndTags | TAG_USED;
+    ptrFreeBlock->sizeAndTags =  ptrFreeBlock->sizeAndTags | precedingBlockUseTag;
+
+    return ((void*) UNSCALED_POINTER_ADD(ptrFreeBlock, WORD_SIZE));
 
 
 }
